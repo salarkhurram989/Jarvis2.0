@@ -11,7 +11,7 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\JARVIS 2.0
 DefaultGroupName={#MyAppName}
-OutputDir=installer
+OutputDir=..\installer
 OutputBaseFilename=JARVIS-Setup
 Compression=lzma
 SolidCompression=yes
@@ -22,7 +22,7 @@ UninstallDisplayName={#MyAppName}
 Uninstallable=yes
 
 [Files]
-Source: "dist\JARVIS2.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\JARVIS2.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\JARVIS 2.0"; Filename: "{app}\{#MyAppExeName}"
