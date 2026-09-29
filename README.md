@@ -16,7 +16,9 @@ JARVIS 2.0 uses the **existing JARVIS Gemini backend** for general AI conversati
 ## Setup
 
 ### Easiest option
-Download the **JARVIS2-Windows** artifact produced by GitHub Actions, extract it, and run `JARVIS2.exe`.
+Download the **JARVIS-Setup.exe** installer produced by GitHub Actions. It installs JARVIS 2.0, creates Start Menu and Desktop shortcuts, and can launch JARVIS immediately after installation.
+
+The installer is self-contained: the target PC does not need Python or Node.js installed.
 
 ### Run from source
 Install Python 3.11+ and run:
