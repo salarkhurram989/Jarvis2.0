@@ -1,4 +1,4 @@
-import json, os, re, subprocess, threading, urllib.request, urllib.error
+import json, os, re, subprocess, threading, urllib.request, urllib.error, traceback
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -6,6 +6,20 @@ from tkinter import ttk, messagebox
 API_URL = "https://jarvis-flax-pi.vercel.app/api/chat"
 APP_NAME = "JARVIS 2.0"
 CONFIG = Path.home() / ".jarvis2_config.json"
+LOG_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "JARVIS2"
+LOG_FILE = LOG_DIR / "startup.log"
+
+def log_exception(exc=None):
+    try:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write("\n--- JARVIS 2.0 startup/error ---\n")
+            if exc is None:
+                traceback.print_exc(file=f)
+            else:
+                traceback.print_exception(type(exc), exc, exc.__traceback__, file=f)
+    except Exception:
+        pass
 
 def open_item(path):
     p = Path(path)
@@ -169,6 +183,19 @@ class JarvisApp:
             self.root.after(0, lambda: self.status.config(text="LOCAL PC • READY", fg="#46f0b0"))
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    JarvisApp(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        JarvisApp(root)
+        root.mainloop()
+    except Exception as exc:
+        log_exception(exc)
+        try:
+            messagebox.showerror(
+                "JARVIS 2.0 could not start",
+                "JARVIS 2.0 failed to start.\n\n"
+                f"Error: {exc}\n\n"
+                f"A startup log was saved to:\n{LOG_FILE}"
+            )
+        except Exception:
+            pass
+        raise
