@@ -1,9 +1,10 @@
-import json, os, re, subprocess, threading, urllib.request, urllib.error, traceback
+import json, os, re, subprocess, threading, urllib.request, urllib.error, traceback, platform, shutil, time
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-API_URL = "https://jarvis-flax-pi.vercel.app/api/chat"
+API_URL = os.environ.get("JARVIS_API_URL", "https://jarvis-flax-pi.vercel.app/api/chat")
+API_TIMEOUT = 12
 APP_NAME = "JARVIS 2.0"
 CONFIG = Path.home() / ".jarvis2_config.json"
 LOG_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "JARVIS2"
@@ -59,6 +60,25 @@ def search_files(query, limit=25):
             continue
     return results
 
+def system_info():
+    return (f"PC: {platform.node()}\\nOS: {platform.system()} {platform.release()}\\n"
+            f"CPU: {platform.processor() or 'Unknown'}\\nPython: {platform.python_version()}")
+
+def quick_launch(name):
+    q = name.lower().replace(".exe", "").strip()
+    aliases = {"chrome":"chrome.exe","google chrome":"chrome.exe","edge":"msedge.exe",
+               "notepad":"notepad.exe","calculator":"calc.exe","calc":"calc.exe",
+               "paint":"mspaint.exe","explorer":"explorer.exe"}
+    exe = aliases.get(q, q + ".exe")
+    found = shutil.which(exe)
+    if found:
+        try:
+            subprocess.Popen([found], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True, f"Launching {q}."
+        except OSError:
+            pass
+    return False, None
+
 def find_app(name):
     q = name.lower().replace(".exe", "").strip()
     places = [
@@ -83,12 +103,25 @@ def find_app(name):
 def ai_reply(message):
     body = json.dumps({"message": message}).encode("utf-8")
     req = urllib.request.Request(API_URL, data=body, headers={"Content-Type":"application/json"})
-    with urllib.request.urlopen(req, timeout=20) as response:
+    with urllib.request.urlopen(req, timeout=API_TIMEOUT) as response:
         data = json.loads(response.read().decode("utf-8"))
     return data.get("answer", "I didn't receive an answer.")
 
 def handle_local_command(text):
     t = text.lower().strip()
+
+    if t in {"time", "what time is it", "current time"}:
+        return time.strftime("It is %I:%M %p."), None
+    if t in {"date", "today", "what is the date", "what date is it"}:
+        return time.strftime("Today is %A, %B %d, %Y."), None
+    if t in {"system info", "pc info", "computer info", "my pc specs"}:
+        return system_info(), None
+
+    m = re.match(r"^(open|launch|start)\s+(?:the\s+)?(.+)$", text, re.I)
+    if m:
+        ok, msg = quick_launch(m.group(2).strip())
+        if ok:
+            return msg, None
 
     if t.startswith(("find ", "search for ", "search ")):
         q = re.sub(r"^(find|search for|search)\s+", "", text, flags=re.I)
