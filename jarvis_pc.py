@@ -36,11 +36,15 @@ def search_files(query, limit=25):
     q = query.lower().strip().strip('"').strip("'")
     roots = []
     home = Path.home()
-    for p in (home/"Desktop", home/"Documents", home/"Downloads"):
+    common = (home/"Desktop", home/"Documents", home/"Downloads")
+    for p in common:
         if p.exists(): roots.append(p)
-    for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ":
-        p = Path(f"{letter}:\\")
-        if p.exists(): roots.append(p)
+    # Full-drive scanning is opt-in because it can be very slow on large disks.
+    if q.startswith(("all drives:", "all disks:", "everywhere:")):
+        q = re.sub(r"^(all drives:|all disks:|everywhere:)\\s*", "", q)
+        for letter in "CDEFGHIJKLMNOPQRSTUVWXYZ":
+            p = Path(f"{letter}:\\")
+            if p.exists(): roots.append(p)
 
     skip = {
         "Windows", "ProgramData", "$Recycle.Bin", "System Volume Information",
@@ -116,6 +120,11 @@ def handle_local_command(text):
         return time.strftime("Today is %A, %B %d, %Y."), None
     if t in {"system info", "pc info", "computer info", "my pc specs"}:
         return system_info(), None
+    folders = {"downloads": Path.home()/"Downloads", "desktop": Path.home()/"Desktop",
+               "documents": Path.home()/"Documents"}
+    m = re.match(r"^(open|go to)\\s+(downloads|desktop|documents)$", t)
+    if m and folders[m.group(2)].exists():
+        return open_item(folders[m.group(2)])[1], None
 
     m = re.match(r"^(open|launch|start)\s+(?:the\s+)?(.+)$", text, re.I)
     if m:
